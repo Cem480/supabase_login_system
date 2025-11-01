@@ -1,0 +1,291 @@
+{% extends "base.html" %}
+
+{% block title %}Sign Up - Supabase Auth{% endblock %}
+
+{% block content %}
+<div class="auth-container">
+    <div class="auth-card">
+        <!-- Logo/Header -->
+        <div class="auth-header">
+            <div class="auth-icon">
+                <i class="fas fa-user-plus"></i>
+            </div>
+            <h1>Create Account</h1>
+            <p>Join us today and start building amazing things</p>
+        </div>
+
+        <!-- OAuth Buttons -->
+        <div class="oauth-buttons">
+            <a href="{{ url_for('oauth_login', provider='google') }}" class="btn btn-oauth btn-google">
+                <i class="fab fa-google"></i>
+                <span>Sign up with Google</span>
+            </a>
+            <a href="{{ url_for('oauth_login', provider='github') }}" class="btn btn-oauth btn-github">
+                <i class="fab fa-github"></i>
+                <span>Sign up with GitHub</span>
+            </a>
+        </div>
+
+        <!-- Divider -->
+        <div class="divider">
+            <span>or</span>
+        </div>
+
+        <!-- Registration Form -->
+        <form id="registerForm" class="auth-form">
+            <!-- Full Name Input -->
+            <div class="form-group">
+                <label for="fullName">
+                    <i class="fas fa-user"></i>
+                    Full Name
+                </label>
+                <input 
+                    type="text" 
+                    id="fullName" 
+                    name="fullName" 
+                    placeholder="John Doe"
+                    autocomplete="name"
+                >
+                <span class="error-message" id="fullNameError"></span>
+            </div>
+
+            <!-- Email Input -->
+            <div class="form-group">
+                <label for="email">
+                    <i class="fas fa-envelope"></i>
+                    Email Address *
+                </label>
+                <input 
+                    type="email" 
+                    id="email" 
+                    name="email" 
+                    placeholder="you@example.com"
+                    required
+                    autocomplete="email"
+                >
+                <span class="error-message" id="emailError"></span>
+            </div>
+
+            <!-- Password Input with Strength Meter -->
+            <div class="form-group">
+                <label for="password">
+                    <i class="fas fa-key"></i>
+                    Password *
+                </label>
+                <div class="password-input">
+                    <input 
+                        type="password" 
+                        id="password" 
+                        name="password" 
+                        placeholder="••••••••"
+                        required
+                        autocomplete="new-password"
+                    >
+                    <button type="button" class="password-toggle" onclick="togglePassword('password', 'passwordIcon')">
+                        <i class="fas fa-eye" id="passwordIcon"></i>
+                    </button>
+                </div>
+                
+                <!-- Password Strength Meter -->
+                <div class="password-strength">
+                    <div class="strength-meter">
+                        <div class="strength-meter-fill" id="strengthMeterFill"></div>
+                    </div>
+                    <div class="strength-text" id="strengthText">Enter a password</div>
+                </div>
+                
+                <!-- Password Requirements -->
+                <div class="password-requirements">
+                    <div class="requirement" id="req-length">
+                        <i class="fas fa-circle"></i>
+                        <span>At least 8 characters</span>
+                    </div>
+                    <div class="requirement" id="req-uppercase">
+                        <i class="fas fa-circle"></i>
+                        <span>One uppercase letter</span>
+                    </div>
+                    <div class="requirement" id="req-lowercase">
+                        <i class="fas fa-circle"></i>
+                        <span>One lowercase letter</span>
+                    </div>
+                    <div class="requirement" id="req-number">
+                        <i class="fas fa-circle"></i>
+                        <span>One number</span>
+                    </div>
+                    <div class="requirement" id="req-special">
+                        <i class="fas fa-circle"></i>
+                        <span>One special character</span>
+                    </div>
+                </div>
+                
+                <span class="error-message" id="passwordError"></span>
+            </div>
+
+            <!-- Confirm Password Input -->
+            <div class="form-group">
+                <label for="confirmPassword">
+                    <i class="fas fa-check-circle"></i>
+                    Confirm Password *
+                </label>
+                <div class="password-input">
+                    <input 
+                        type="password" 
+                        id="confirmPassword" 
+                        name="confirmPassword" 
+                        placeholder="••••••••"
+                        required
+                        autocomplete="new-password"
+                    >
+                    <button type="button" class="password-toggle" onclick="togglePassword('confirmPassword', 'confirmPasswordIcon')">
+                        <i class="fas fa-eye" id="confirmPasswordIcon"></i>
+                    </button>
+                </div>
+                <span class="error-message" id="confirmPasswordError"></span>
+            </div>
+
+            <!-- Terms Agreement -->
+            <div class="form-group">
+                <label class="checkbox-label">
+                    <input type="checkbox" id="agreeTerms" name="agreeTerms" required>
+                    <span>I agree to the <a href="#" class="link-primary">Terms of Service</a> and <a href="#" class="link-primary">Privacy Policy</a></span>
+                </label>
+            </div>
+
+            <!-- Submit Button -->
+            <button type="submit" class="btn btn-primary btn-block" id="registerBtn">
+                <span class="btn-text">Create Account</span>
+                <span class="btn-loader" style="display: none;">
+                    <i class="fas fa-circle-notch fa-spin"></i>
+                    Creating account...
+                </span>
+            </button>
+
+            <!-- Error Message Container -->
+            <div class="alert alert-error" id="formError" style="display: none;"></div>
+        </form>
+
+        <!-- Sign In Link -->
+        <div class="auth-footer">
+            <p>Already have an account? <a href="{{ url_for('login') }}" class="link-primary">Sign in</a></p>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script src="{{ url_for('static', filename='js/validation.js') }}"></script>
+<script src="{{ url_for('static', filename='js/password.js') }}"></script>
+<script>
+// Registration Form Handler
+document.getElementById('registerForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    // Get form data
+    const fullName = document.getElementById('fullName').value.trim();
+    const email = document.getElementById('email').value.trim();
+    const password = document.getElementById('password').value;
+    const confirmPassword = document.getElementById('confirmPassword').value;
+    const agreeTerms = document.getElementById('agreeTerms').checked;
+    
+    // Clear previous errors
+    clearErrors();
+    
+    // Validate email
+    if (!validateEmail(email)) {
+        showError('emailError', 'Please enter a valid email address');
+        return;
+    }
+    
+    // Validate password
+    const passwordValidation = validatePassword(password);
+    if (!passwordValidation.valid) {
+        showError('passwordError', passwordValidation.message);
+        return;
+    }
+    
+    // Validate password match
+    if (password !== confirmPassword) {
+        showError('confirmPasswordError', 'Passwords do not match');
+        return;
+    }
+    
+    // Validate terms
+    if (!agreeTerms) {
+        showFormError('Please agree to the Terms of Service and Privacy Policy');
+        return;
+    }
+    
+    // Show loading state
+    showLoading('registerBtn');
+    
+    try {
+        // Send registration request
+        const response = await fetch('/api/auth/register', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                email: email,
+                password: password,
+                full_name: fullName
+            })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            // Show success message
+            showSuccess('Account created successfully! Redirecting...');
+            
+            // Redirect to dashboard
+            setTimeout(() => {
+                window.location.href = '{{ url_for("dashboard") }}';
+            }, 1000);
+        } else {
+            // Show error
+            showFormError(data.error || 'Registration failed. Please try again.');
+            hideLoading('registerBtn');
+        }
+    } catch (error) {
+        console.error('Registration error:', error);
+        showFormError('An error occurred. Please try again.');
+        hideLoading('registerBtn');
+    }
+});
+
+// Toggle password visibility
+function togglePassword(inputId, iconId) {
+    const input = document.getElementById(inputId);
+    const icon = document.getElementById(iconId);
+    
+    if (input.type === 'password') {
+        input.type = 'text';
+        icon.classList.remove('fa-eye');
+        icon.classList.add('fa-eye-slash');
+    } else {
+        input.type = 'password';
+        icon.classList.remove('fa-eye-slash');
+        icon.classList.add('fa-eye');
+    }
+}
+
+// Show form error
+function showFormError(message) {
+    const errorDiv = document.getElementById('formError');
+    errorDiv.textContent = message;
+    errorDiv.style.display = 'block';
+}
+
+// Clear all errors
+function clearErrors() {
+    document.querySelectorAll('.error-message').forEach(el => el.textContent = '');
+    document.getElementById('formError').style.display = 'none';
+}
+
+// Initialize password strength checker
+document.getElementById('password').addEventListener('input', function(e) {
+    updatePasswordStrength(e.target.value);
+});
+</script>
+{% endblock %}

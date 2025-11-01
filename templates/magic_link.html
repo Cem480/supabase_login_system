@@ -1,0 +1,169 @@
+{% extends "base.html" %}
+
+{% block title %}Magic Link - Supabase Auth{% endblock %}
+
+{% block content %}
+<div class="auth-container">
+    <div class="auth-card">
+        <!-- Logo/Header -->
+        <div class="auth-header">
+            <div class="auth-icon">
+                <i class="fas fa-magic"></i>
+            </div>
+            <h1>Passwordless Login</h1>
+            <p>Get a magic link sent to your email for instant access</p>
+        </div>
+
+        <!-- Magic Link Form -->
+        <form id="magicLinkForm" class="auth-form">
+            <!-- Email Input -->
+            <div class="form-group">
+                <label for="email">
+                    <i class="fas fa-envelope"></i>
+                    Email Address
+                </label>
+                <input 
+                    type="email" 
+                    id="email" 
+                    name="email" 
+                    placeholder="you@example.com"
+                    required
+                    autocomplete="email"
+                    autofocus
+                >
+                <span class="error-message" id="emailError"></span>
+            </div>
+
+            <!-- Info Box -->
+            <div class="alert alert-info">
+                <i class="fas fa-info-circle"></i>
+                <span>We'll send you a secure link to sign in without a password. The link expires in 15 minutes.</span>
+            </div>
+
+            <!-- Submit Button -->
+            <button type="submit" class="btn btn-primary btn-block" id="magicLinkBtn">
+                <span class="btn-text">
+                    <i class="fas fa-paper-plane"></i>
+                    Send Magic Link
+                </span>
+                <span class="btn-loader" style="display: none;">
+                    <i class="fas fa-circle-notch fa-spin"></i>
+                    Sending...
+                </span>
+            </button>
+
+            <!-- Success Message Container -->
+            <div class="alert alert-success" id="successMessage" style="display: none;">
+                <i class="fas fa-check-circle"></i>
+                <div>
+                    <strong>Magic link sent!</strong>
+                    <p>Check your email and click the link to sign in.</p>
+                </div>
+            </div>
+
+            <!-- Error Message Container -->
+            <div class="alert alert-error" id="formError" style="display: none;"></div>
+        </form>
+
+        <!-- Back to Login Link -->
+        <div class="auth-footer">
+            <p>
+                <a href="{{ url_for('login') }}" class="link-primary">
+                    <i class="fas fa-arrow-left"></i> Back to login
+                </a>
+            </p>
+        </div>
+    </div>
+
+    <!-- How It Works -->
+    <div class="auth-features">
+        <div class="feature">
+            <div class="feature-step">1</div>
+            <h3>Enter Your Email</h3>
+            <p>Provide the email address associated with your account</p>
+        </div>
+        <div class="feature">
+            <div class="feature-step">2</div>
+            <h3>Check Your Inbox</h3>
+            <p>We'll send you a secure, one-time login link</p>
+        </div>
+        <div class="feature">
+            <div class="feature-step">3</div>
+            <h3>Click to Login</h3>
+            <p>Click the link in your email to access your account instantly</p>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script src="{{ url_for('static', filename='js/validation.js') }}"></script>
+<script>
+// Magic Link Form Handler
+document.getElementById('magicLinkForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    // Get email
+    const email = document.getElementById('email').value.trim();
+    
+    // Validate email
+    if (!validateEmail(email)) {
+        showError('emailError', 'Please enter a valid email address');
+        return;
+    }
+    
+    // Clear errors
+    document.getElementById('emailError').textContent = '';
+    document.getElementById('formError').style.display = 'none';
+    document.getElementById('successMessage').style.display = 'none';
+    
+    // Show loading state
+    showLoading('magicLinkBtn');
+    
+    try {
+        // Send magic link request
+        const response = await fetch('/api/auth/magic-link', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ email: email })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            // Show success message
+            document.getElementById('successMessage').style.display = 'block';
+            
+            // Hide form
+            document.getElementById('magicLinkForm').querySelector('.form-group').style.display = 'none';
+            document.getElementById('magicLinkBtn').style.display = 'none';
+            
+            // In development, show the link
+            if (data.dev_link) {
+                const devLinkDiv = document.createElement('div');
+                devLinkDiv.className = 'alert alert-warning';
+                devLinkDiv.innerHTML = `
+                    <strong>Development Mode</strong>
+                    <p>Magic link: <a href="${data.dev_link}" class="link-primary">${data.dev_link}</a></p>
+                `;
+                document.getElementById('successMessage').after(devLinkDiv);
+            }
+        } else {
+            // Show error
+            const errorDiv = document.getElementById('formError');
+            errorDiv.textContent = data.error || 'Failed to send magic link';
+            errorDiv.style.display = 'block';
+            hideLoading('magicLinkBtn');
+        }
+    } catch (error) {
+        console.error('Magic link error:', error);
+        const errorDiv = document.getElementById('formError');
+        errorDiv.textContent = 'An error occurred. Please try again.';
+        errorDiv.style.display = 'block';
+        hideLoading('magicLinkBtn');
+    }
+});
+</script>
+{% endblock %}
